@@ -1,0 +1,15 @@
+APScheduler==3.11.0
+beanie==1.30.0
+fastapi==0.115.13
+firebase_admin==6.9.0
+geopy==2.4.1
+httpx==0.28.1
+motor==3.7.1
+pydantic==2.11.7
+pymongo==4.13.2
+pyserial==3.5
+python-dotenv==1.1.0
+bcrypt==4.0.1
+Requests==2.32.4
+twilio==9.4.6
+uvicorn==0.34.3
