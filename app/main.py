@@ -23,7 +23,7 @@ from routes.sos_routes import sos_router
 
 from routes.location_routes import location_router
 from routes.location_monitor_routes import location_mon_router
-from routes.voice_sos_routes import voice_sos_router
+
 from routes.route_monitor_routes import share_router, start_route_tracking, RouteShareRequest
 from routes.emergency import router as emergency_router
 
