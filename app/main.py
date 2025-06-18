@@ -46,7 +46,7 @@ app.add_middleware(
 )
 
 # Register Routes
-app.include_router(voice_sos_router, prefix="/api")
+
 app.include_router(location_mon_router, prefix="/api")
 app.include_router(share_router, prefix="/api")
 app.include_router(periodic_router, prefix="/api")
