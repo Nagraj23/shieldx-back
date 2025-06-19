@@ -3,6 +3,9 @@ from typing import Dict, Tuple, Optional
 import asyncio
 import uuid
 from geopy.distance import geodesic
+from motor.motor_asyncio import AsyncIOMotorClient
+from bson import ObjectId
+import os
 
 # Project utilities
 from utils.notifier import send_notification, is_valid_email, is_valid_phone
@@ -19,49 +22,26 @@ DESTINATION_REACHED_THRESHOLD_METERS = 50
 NOTIFICATION_COOLDOWN_MINUTES = 2
 
 # === Initialize tracking ===
-async def initialize_user_tracking(
-    user_id: str, start_lat: float, start_lng: float,
-    end_lat: float, end_lng: float, emergency_contacts: list[str]
-) -> str:
-    now = datetime.utcnow()
 
-    journey_id = str(uuid.uuid4())
 
-    coords = lambda lat, lng: Coordinates(latitude=lat, longitude=lng).dict()
+client = AsyncIOMotorClient(os.getenv("MONGO_URI"))
+db = client["shieldx_db"]
+journeys_collection = db["journeys"]
 
-    new_route_doc = {
+async def initialize_user_tracking(user_id, start_lat, start_lng, end_lat, end_lng, emergency_contacts):
+    journey = {
         "user_id": user_id,
-        "journey_id": journey_id,
-        "start_point": coords(start_lat, start_lng),
-        "end_point": coords(end_lat, end_lng),
-        "current_loc_coordinates": coords(start_lat, start_lng),
-        "previous_loc_coordinates": coords(start_lat, start_lng),
-        "last_updated_at": now,
+        "start": {"lat": start_lat, "lng": start_lng},
+        "end": {"lat": end_lat, "lng": end_lng},
         "emergency_contacts": emergency_contacts,
-        "created_at": now,
-        "status": UserRouteStatus.RUNNING,
-        "last_notification_time": now
+        "status": "active",  # optional
+        "created_at": datetime.utcnow()  # optional
     }
 
-    try:
-        await user_routes_collection.insert_one(new_route_doc)
-        print(f"✅ Initialized tracking for {user_id} | Journey ID: {journey_id}")
+    result = await journeys_collection.insert_one(journey)
 
-        route_summary = f"from ({start_lat}, {start_lng}) to ({end_lat}, {end_lng})"
-        message = f"🧭 {user_id} started a journey {route_summary}. Status: Running."
-        network_status = await is_online()
+    return str(result.inserted_id)  # 👈 return the generated ObjectId as a string
 
-        for contact in emergency_contacts:
-            if is_valid_email(contact) or is_valid_phone(contact):
-                await send_notification(contact, message, network_status)
-            else:
-                print(f"⚠️ Invalid contact: {contact}, skipping notification.")
-
-        return journey_id
-
-    except Exception as e:
-        print(f"❌ DB Error initializing journey for {user_id}: {e}")
-        raise
 
 # === Update current location ===
 async def update_user_current_location(user_id: str, lat: float, lng: float, journey_id: Optional[str] = None):
